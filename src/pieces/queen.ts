@@ -4,6 +4,7 @@ export default class Queen extends Piece {
     constructor(x: number, y: number, color: "white" | "black") {
       super(x, y, color);
       this.type = "queen";
+      this.value = 9;
     }
   
     validMoves(squares: PieceType[][], checks: boolean = true) {

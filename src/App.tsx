@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import evaluatePosition from "./eval";
 import { PieceType } from "./pieces";
 import Bishop from "./pieces/bishop";
 import King from "./pieces/king";
@@ -14,8 +15,7 @@ export default function App() {
   const [enPassant, setEnPassant] = useState<{ x: number; y: number }[]>([]);
   const [message, setMessage] = useState("");
   const [promotion, setPromotion] = useState(false);
-
-  useEffect(() => {
+  const createBoard = () => {
     const array: PieceType[][] = Array.from({ length: 8 }, () =>
       Array.from({ length: 8 }, () => "")
     );
@@ -54,6 +54,10 @@ export default function App() {
     array[7][4] = new King(7, 4, "white");
 
     setSquares(array);
+  };
+
+  useEffect(() => {
+    createBoard();
   }, []);
 
   return (
@@ -335,6 +339,8 @@ export default function App() {
                 }
                 setSquares(array);
 
+                  console.log(evaluatePosition(array))
+
                 // check for checkmate
                 let checkmate = false;
                 let stalemate = true;
@@ -400,6 +406,15 @@ export default function App() {
         {message && (
           <div className="absolute w-full h-full grid place-items-center text-5xl font-bold text-black text-shadow-white">
             {message}
+            <button
+              className="absolute bottom-20 px-8 py-4 text-3xl bg-opacity-80 transition-all hover:bg-opacity-95 bg-rose-700 rounded-full"
+             onClick={() => {
+              createBoard();
+              setMessage("");
+              setPromotion(false);
+              setEnPassant([]);
+              setColor("white");
+            }}>Play Again</button>
           </div>
         )}
         {promotion && (

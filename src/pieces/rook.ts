@@ -5,6 +5,7 @@ export default class Rook extends Piece {
     constructor(x: number, y: number, color: "white" | "black") {
       super(x, y, color);
       this.type = "rook";
+      this.value = 5;
     }
     validMoves(squares: PieceType[][], checks: boolean = true) {
       const validMoves: { x: number; y: number }[] = [];

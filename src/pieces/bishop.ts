@@ -4,6 +4,7 @@ export default class Bishop extends Piece {
     constructor(x: number, y: number, color: "white" | "black") {
       super(x, y, color);
       this.type = "bishop";
+      this.value = 3;
     }
   
     validMoves(squares: PieceType[][], checks: boolean = true) {

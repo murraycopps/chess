@@ -5,6 +5,7 @@ export type PieceType =
       active: boolean;
       hanging: boolean;
       hasMoved: boolean;
+      value: number;
       type: string;
       color: string;
       validMoves: (
@@ -33,6 +34,7 @@ export class Piece {
   active: boolean = false;
   hanging: boolean = false;
   hasMoved: boolean = false;
+  value: number = 0;
   type: PieceOptions;
   color: "white" | "black";
   constructor(x: number, y: number, color: "white" | "black") {

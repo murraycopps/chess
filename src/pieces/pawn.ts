@@ -4,6 +4,7 @@ export default class Pawn extends Piece {
     constructor(x: number, y: number, color: "white" | "black") {
       super(x, y, color);
       this.type = "pawn";
+      this.value = 1;
     }
     validMoves(squares: PieceType[][], checks: boolean = true) {
       if(this.x === 0 || this.x === 7) return ([] as { x: number; y: number }[]);
