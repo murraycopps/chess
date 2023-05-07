@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body{
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.text-shadow-black{
+    text-shadow: 0 0 0.125rem black, 0 0 0.125rem black, 0 0 0.125rem black, 0 0 0.125rem black, 0 0 0.125rem black;
+}
+
+.text-shadow-white{
+    text-shadow: 0 0 0.125rem white, 0 0 0.125rem white, 0 0 0.125rem white, 0 0 0.125rem white;
+}
