@@ -1,4 +1,11 @@
 import { useEffect, useState } from "react";
+import { PieceType } from "./pieces";
+import Bishop from "./pieces/bishop";
+import King from "./pieces/king";
+import Knight from "./pieces/knight";
+import Pawn from "./pieces/pawn";
+import Queen from "./pieces/queen";
+import Rook from "./pieces/rook";
 import Square from "./Square";
 
 export default function App() {
@@ -6,6 +13,7 @@ export default function App() {
   const [color, setColor] = useState<"white" | "black">("white");
   const [enPassant, setEnPassant] = useState<{ x: number; y: number }[]>([]);
   const [message, setMessage] = useState("");
+  const [promotion, setPromotion] = useState(false);
 
   useEffect(() => {
     const array: PieceType[][] = Array.from({ length: 8 }, () =>
@@ -81,7 +89,6 @@ export default function App() {
                 }
 
                 if (hanging && activePiece && typeof activePiece !== "string") {
-                  const hangingPiece = squares[i][j];
                   // capture piece
                   array[i][j] = activePiece;
                   array[activePiece.x][activePiece.y] = "";
@@ -106,7 +113,7 @@ export default function App() {
                     b.active = true;
 
                     // en passant
-                    if(b.type === "pawn") {
+                    if (b.type === "pawn") {
                       enPassant.forEach((move) => {
                         array[move.x][move.y] = "valid-move";
                       });
@@ -163,6 +170,16 @@ export default function App() {
                             activePiece.hasMoved = true;
                             setColor(color === "white" ? "black" : "white");
                           }
+                        } else {
+                          activePiece.active = false;
+                          // remove active piece from old square
+                          array[activePiece.x][activePiece.y] = "";
+                          // move active piece to new square
+                          activePiece.x = i;
+                          activePiece.y = j;
+                          activePiece.hasMoved = true;
+                          array[i][j] = activePiece;
+                          setColor(color === "white" ? "black" : "white");
                         }
                       } else if (
                         activePiece.color === "black" &&
@@ -208,7 +225,27 @@ export default function App() {
                             activePiece.hasMoved = true;
                             setColor(color === "white" ? "black" : "white");
                           }
+                        } else {
+                          activePiece.active = false;
+                          // remove active piece from old square
+                          array[activePiece.x][activePiece.y] = "";
+                          // move active piece to new square
+                          activePiece.x = i;
+                          activePiece.y = j;
+                          activePiece.hasMoved = true;
+                          array[i][j] = activePiece;
+                          setColor(color === "white" ? "black" : "white");
                         }
+                      } else {
+                        activePiece.active = false;
+                        // remove active piece from old square
+                        array[activePiece.x][activePiece.y] = "";
+                        // move active piece to new square
+                        activePiece.x = i;
+                        activePiece.y = j;
+                        activePiece.hasMoved = true;
+                        array[i][j] = activePiece;
+                        setColor(color === "white" ? "black" : "white");
                       }
                     } else {
                       activePiece.active = false;
@@ -299,1146 +336,163 @@ export default function App() {
                 setSquares(array);
 
                 // check for checkmate
-                let checkmate = true;
+                let checkmate = false;
+                let stalemate = true;
                 array.forEach((a) => {
                   a.forEach((b) => {
                     if (typeof b !== "string" && b.color !== color) {
                       const validMoves = b.validMoves(array);
                       const captureMoves = b.capture(array);
                       if (validMoves.length > 0 || captureMoves.length > 0) {
-                        checkmate = false;
+                        stalemate = false;
                       }
                     }
                   });
                 });
+                // if stalemate check if king is in check
+                if (stalemate) {
+                  array.forEach((a) => {
+                    a.forEach((b) => {
+                      if (typeof b !== "string" && b.color === color) {
+                        const capture = b.capture(array);
+                        if (
+                          capture.length > 0 &&
+                          capture.find((move) => {
+                            const piece = array[move.x][move.y];
+                            return (
+                              typeof piece !== "string" && piece.type === "king"
+                            );
+                          })
+                        ) {
+                          console.log("check", b);
+                          checkmate = true;
+                        }
+                      }
+                    });
+                  });
+                }
+
                 if (checkmate) {
                   // alert(`${color !== "white" ? "Black" : "White"} wins!`);
                   setMessage(`${color !== "white" ? "Black" : "White"} wins!`);
+                } else if (stalemate) {
+                  // alert("Stalemate!");
+                  setMessage("Stalemate!");
                 }
+
+                // check for promotion
+                array.forEach((a) => {
+                  a.forEach((b) => {
+                    if (typeof b !== "string" && b.type === "pawn") {
+                      if (
+                        (b.color === "white" && b.x === 0) ||
+                        (b.color === "black" && b.x === 7)
+                      ) {
+                        setPromotion(true);
+                      }
+                    }
+                  });
+                });
               }}
             />
           ))
         )}
-        {
-          message && ( <div className="absolute w-full h-full grid place-items-center text-5xl font-bold text-black text-shadow-white">{message}</div> )
-        }
+        {message && (
+          <div className="absolute w-full h-full grid place-items-center text-5xl font-bold text-black text-shadow-white">
+            {message}
+          </div>
+        )}
+        {promotion && (
+          <div className="absolute w-full bg-white bg-opacity-80 h-full p-16 text-8xl text-black text-center text-shadow-white">
+              <div className="grid grid-cols-2 place-items-center w-full h-full">
+              <div
+                onClick={() => {
+                  const array: PieceType[][] = [...squares];
+                  array.forEach((a) => {
+                    a.forEach((b) => {
+                      if (typeof b !== "string" && b.type === "pawn") {
+                        if (
+                          (b.color === "white" && b.x === 0) ||
+                          (b.color === "black" && b.x === 7)
+                        ) {
+                          array[b.x][b.y] = new Queen(b.x, b.y, b.color);
+                        }
+                      }
+                    });
+                  });
+                  setSquares(array);
+                  setPromotion(false);
+                }}
+              >
+                <p>♛</p>
+              </div>
+              <div
+                onClick={() => {
+                  const array: PieceType[][] = [...squares];
+                  array.forEach((a) => {
+                    a.forEach((b) => {
+                      if (typeof b !== "string" && b.type === "pawn") {
+                        if (
+                          (b.color === "white" && b.x === 0) ||
+                          (b.color === "black" && b.x === 7)
+                        ) {
+                          array[b.x][b.y] = new Rook(b.x, b.y, b.color);
+                        }
+                      }
+                    });
+                  });
+                  setSquares(array);
+                  setPromotion(false);
+                }}
+              >
+                <p>♜</p>
+              </div>
+              <div
+                onClick={() => {
+                  const array: PieceType[][] = [...squares];
+                  array.forEach((a) => {
+                    a.forEach((b) => {
+                      if (typeof b !== "string" && b.type === "pawn") {
+                        if (
+                          (b.color === "white" && b.x === 0) ||
+                          (b.color === "black" && b.x === 7)
+                        ) {
+                          array[b.x][b.y] = new Bishop(b.x, b.y, b.color);
+                        }
+                      }
+                    });
+                  });
+                  setSquares(array);
+                  setPromotion(false);
+                }}
+              >
+                <p>♝</p>
+              </div>
+              <div
+                onClick={() => {
+                  const array: PieceType[][] = [...squares];
+                  array.forEach((a) => {
+                    a.forEach((b) => {
+                      if (typeof b !== "string" && b.type === "pawn") {
+                        if (
+                          (b.color === "white" && b.x === 0) ||
+                          (b.color === "black" && b.x === 7)
+                        ) {
+                          array[b.x][b.y] = new Knight(b.x, b.y, b.color);
+                        }
+                      }
+                    });
+                  });
+                  setSquares(array);
+                  setPromotion(false);
+                }}
+              >
+                <p>♞</p>
+              </div>
+              </div>
+            </div>
+        )}
       </div>
     </div>
   );
-}
-export type PieceType =
-  | {
-      x: number;
-      y: number;
-      active: boolean;
-      hanging: boolean;
-      hasMoved: boolean;
-      type: string;
-      color: string;
-      validMoves: (
-        squares: PieceType[][],
-        checks?: boolean
-      ) => { x: number; y: number }[];
-      capture: (
-        squares: PieceType[][],
-        checks?: boolean
-      ) => { x: number; y: number }[];
-    }
-  | string;
-
-type PieceOptions =
-  | "pawn"
-  | "rook"
-  | "knight"
-  | "bishop"
-  | "queen"
-  | "king"
-  | "";
-
-class Piece {
-  x: number;
-  y: number;
-  active: boolean = false;
-  hanging: boolean = false;
-  hasMoved: boolean = false;
-  type: PieceOptions;
-  color: "white" | "black";
-  constructor(x: number, y: number, color: "white" | "black") {
-    this.x = x;
-    this.y = y;
-    this.type = "";
-    this.color = color;
-  }
-}
-
-class Pawn extends Piece {
-  constructor(x: number, y: number, color: "white" | "black") {
-    super(x, y, color);
-    this.type = "pawn";
-  }
-  validMoves(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    if (this.color === "white") {
-      if (this.x === 6) {
-        if (squares[this.x - 1][this.y] === "") {
-          validMoves.push({ x: this.x - 1, y: this.y });
-          if (squares[this.x - 2][this.y] === "") {
-            validMoves.push({ x: this.x - 2, y: this.y });
-          }
-        }
-      } else {
-        if (squares[this.x - 1][this.y] === "") {
-          validMoves.push({ x: this.x - 1, y: this.y });
-        }
-      }
-    } else {
-      if (this.x === 1) {
-        if (squares[this.x + 1][this.y] === "") {
-          validMoves.push({ x: this.x + 1, y: this.y });
-          if (squares[this.x + 2][this.y] === "") {
-            validMoves.push({ x: this.x + 2, y: this.y });
-          }
-        }
-      } else {
-        if (squares[this.x + 1][this.y] === "") {
-          validMoves.push({ x: this.x + 1, y: this.y });
-        }
-      }
-    }
-
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-  capture(squares: PieceType[][], checks: boolean = true) {
-    // check for diagonal capture
-    const validMoves: { x: number; y: number }[] = [];
-    if (this.color === "white") {
-      if (this.y < 7) {
-        const right = squares[this.x - 1][this.y + 1];
-        if (typeof right !== "string" && right.color !== this.color) {
-          validMoves.push({ x: this.x - 1, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        const left = squares[this.x - 1][this.y - 1];
-        if (typeof left !== "string" && left.color !== this.color) {
-          validMoves.push({ x: this.x - 1, y: this.y - 1 });
-        }
-      }
-    } else {
-      if (this.y < 7) {
-        const right = squares[this.x + 1][this.y + 1];
-        if (typeof right !== "string" && right.color !== this.color) {
-          validMoves.push({ x: this.x + 1, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        const left = squares[this.x + 1][this.y - 1];
-        if (typeof left !== "string" && left.color !== this.color) {
-          validMoves.push({ x: this.x + 1, y: this.y - 1 });
-        }
-      }
-    }
-
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-}
-
-class Rook extends Piece {
-  constructor(x: number, y: number, color: "white" | "black") {
-    super(x, y, color);
-    this.type = "rook";
-  }
-  validMoves(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    for (let i = this.x + 1; i < 8; i++) {
-      if (squares[i][this.y] === "") {
-        validMoves.push({ x: i, y: this.y });
-      } else {
-        break;
-      }
-    }
-    for (let i = this.x - 1; i >= 0; i--) {
-      if (squares[i][this.y] === "") {
-        validMoves.push({ x: i, y: this.y });
-      } else {
-        break;
-      }
-    }
-    // check for horizontal moves
-    for (let i = this.y + 1; i < 8; i++) {
-      if (squares[this.x][i] === "") {
-        validMoves.push({ x: this.x, y: i });
-      } else {
-        break;
-      }
-    }
-    for (let i = this.y - 1; i >= 0; i--) {
-      if (squares[this.x][i] === "") {
-        validMoves.push({ x: this.x, y: i });
-      } else {
-        break;
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-
-  capture(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    for (let i = this.x + 1; i < 8; i++) {
-      const piece = squares[i][this.y];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: this.y });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    for (let i = this.x - 1; i >= 0; i--) {
-      const piece = squares[i][this.y];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: this.y });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    // check for horizontal moves
-    for (let i = this.y + 1; i < 8; i++) {
-      const piece = squares[this.x][i];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x, y: i });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    for (let i = this.y - 1; i >= 0; i--) {
-      const piece = squares[this.x][i];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x, y: i });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-}
-
-class Knight extends Piece {
-  constructor(x: number, y: number, color: "white" | "black") {
-    super(x, y, color);
-    this.type = "knight";
-  }
-
-  validMoves(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    if (this.x < 6) {
-      if (this.y < 7) {
-        if (squares[this.x + 2][this.y + 1] === "") {
-          validMoves.push({ x: this.x + 2, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        if (squares[this.x + 2][this.y - 1] === "") {
-          validMoves.push({ x: this.x + 2, y: this.y - 1 });
-        }
-      }
-    }
-    if (this.x > 1) {
-      if (this.y < 7) {
-        if (squares[this.x - 2][this.y + 1] === "") {
-          validMoves.push({ x: this.x - 2, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        if (squares[this.x - 2][this.y - 1] === "") {
-          validMoves.push({ x: this.x - 2, y: this.y - 1 });
-        }
-      }
-    }
-    // check for horizontal moves
-    if (this.y < 6) {
-      if (this.x < 7) {
-        if (squares[this.x + 1][this.y + 2] === "") {
-          validMoves.push({ x: this.x + 1, y: this.y + 2 });
-        }
-      }
-      if (this.x > 0) {
-        if (squares[this.x - 1][this.y + 2] === "") {
-          validMoves.push({ x: this.x - 1, y: this.y + 2 });
-        }
-      }
-    }
-    if (this.y > 1) {
-      if (this.x < 7) {
-        if (squares[this.x + 1][this.y - 2] === "") {
-          validMoves.push({ x: this.x + 1, y: this.y - 2 });
-        }
-      }
-      if (this.x > 0) {
-        if (squares[this.x - 1][this.y - 2] === "") {
-          validMoves.push({ x: this.x - 1, y: this.y - 2 });
-        }
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-
-  capture(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    if (this.x < 6) {
-      if (this.y < 7) {
-        const piece = squares[this.x + 2][this.y + 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x + 2, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        const piece = squares[this.x + 2][this.y - 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x + 2, y: this.y - 1 });
-        }
-      }
-    }
-    if (this.x > 1) {
-      if (this.y < 7) {
-        const piece = squares[this.x - 2][this.y + 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x - 2, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        const piece = squares[this.x - 2][this.y - 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x - 2, y: this.y - 1 });
-        }
-      }
-    }
-    // check for horizontal moves
-    if (this.y < 6) {
-      if (this.x < 7) {
-        const piece = squares[this.x + 1][this.y + 2];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x + 1, y: this.y + 2 });
-        }
-      }
-      if (this.x > 0) {
-        const piece = squares[this.x - 1][this.y + 2];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x - 1, y: this.y + 2 });
-        }
-      }
-    }
-    if (this.y > 1) {
-      if (this.x < 7) {
-        const piece = squares[this.x + 1][this.y - 2];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x + 1, y: this.y - 2 });
-        }
-      }
-      if (this.x > 0) {
-        const piece = squares[this.x - 1][this.y - 2];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x - 1, y: this.y - 2 });
-        }
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-}
-
-class Bishop extends Piece {
-  constructor(x: number, y: number, color: "white" | "black") {
-    super(x, y, color);
-    this.type = "bishop";
-  }
-
-  validMoves(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for diagonal moves
-    for (let i = this.x + 1, j = this.y + 1; i < 8 && j < 8; i++, j++) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-    for (let i = this.x - 1, j = this.y - 1; i >= 0 && j >= 0; i--, j--) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-    for (let i = this.x + 1, j = this.y - 1; i < 8 && j >= 0; i++, j--) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-    for (let i = this.x - 1, j = this.y + 1; i >= 0 && j < 8; i--, j++) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-
-  capture(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for diagonal moves
-    for (let i = this.x + 1, j = this.y + 1; i < 8 && j < 8; i++, j++) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-
-    for (let i = this.x - 1, j = this.y - 1; i >= 0 && j >= 0; i--, j--) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-
-    for (let i = this.x + 1, j = this.y - 1; i < 8 && j >= 0; i++, j--) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-
-    for (let i = this.x - 1, j = this.y + 1; i >= 0 && j < 8; i--, j++) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-}
-
-class Queen extends Piece {
-  constructor(x: number, y: number, color: "white" | "black") {
-    super(x, y, color);
-    this.type = "queen";
-  }
-
-  validMoves(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    for (let i = this.x + 1; i < 8; i++) {
-      if (squares[i][this.y] === "") {
-        validMoves.push({ x: i, y: this.y });
-      } else {
-        break;
-      }
-    }
-    for (let i = this.x - 1; i >= 0; i--) {
-      if (squares[i][this.y] === "") {
-        validMoves.push({ x: i, y: this.y });
-      } else {
-        break;
-      }
-    }
-    // check for horizontal moves
-    for (let i = this.y + 1; i < 8; i++) {
-      if (squares[this.x][i] === "") {
-        validMoves.push({ x: this.x, y: i });
-      } else {
-        break;
-      }
-    }
-    for (let i = this.y - 1; i >= 0; i--) {
-      if (squares[this.x][i] === "") {
-        validMoves.push({ x: this.x, y: i });
-      } else {
-        break;
-      }
-    }
-    // check for diagonal moves
-    for (let i = this.x + 1, j = this.y + 1; i < 8 && j < 8; i++, j++) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-
-    for (let i = this.x - 1, j = this.y - 1; i >= 0 && j >= 0; i--, j--) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-
-    for (let i = this.x + 1, j = this.y - 1; i < 8 && j >= 0; i++, j--) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-
-    for (let i = this.x - 1, j = this.y + 1; i >= 0 && j < 8; i--, j++) {
-      if (squares[i][j] === "") {
-        validMoves.push({ x: i, y: j });
-      } else {
-        break;
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-
-  capture(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    for (let i = this.x + 1; i < 8; i++) {
-      const piece = squares[i][this.y];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: this.y });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    for (let i = this.x - 1; i >= 0; i--) {
-      const piece = squares[i][this.y];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: this.y });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    // check for horizontal moves
-    for (let i = this.y + 1; i < 8; i++) {
-      const piece = squares[this.x][i];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x, y: i });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    for (let i = this.y - 1; i >= 0; i--) {
-      const piece = squares[this.x][i];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x, y: i });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    // check for diagonal moves
-    for (let i = this.x + 1, j = this.y + 1; i < 8 && j < 8; i++, j++) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-
-    for (let i = this.x - 1, j = this.y - 1; i >= 0 && j >= 0; i--, j--) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-
-    for (let i = this.x + 1, j = this.y - 1; i < 8 && j >= 0; i++, j--) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-
-    for (let i = this.x - 1, j = this.y + 1; i >= 0 && j < 8; i--, j++) {
-      const piece = squares[i][j];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: i, y: j });
-        break;
-      } else if (typeof piece !== "string" && piece.color === this.color) {
-        break;
-      }
-    }
-    return checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-  }
-}
-
-class King extends Piece {
-  constructor(x: number, y: number, color: "white" | "black") {
-    super(x, y, color);
-    this.type = "king";
-  }
-
-  validMoves(squares: PieceType[][], checks: boolean = true) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    if (this.x < 7) {
-      if (squares[this.x + 1][this.y] === "") {
-        validMoves.push({ x: this.x + 1, y: this.y });
-      }
-      if (this.y < 7) {
-        if (squares[this.x + 1][this.y + 1] === "") {
-          validMoves.push({ x: this.x + 1, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        if (squares[this.x + 1][this.y - 1] === "") {
-          validMoves.push({ x: this.x + 1, y: this.y - 1 });
-        }
-      }
-    }
-    if (this.x > 0) {
-      if (squares[this.x - 1][this.y] === "") {
-        validMoves.push({ x: this.x - 1, y: this.y });
-      }
-      if (this.y < 7) {
-        if (squares[this.x - 1][this.y + 1] === "") {
-          validMoves.push({ x: this.x - 1, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        if (squares[this.x - 1][this.y - 1] === "") {
-          validMoves.push({ x: this.x - 1, y: this.y - 1 });
-        }
-      }
-    }
-    // check for horizontal moves
-    if (this.y < 7) {
-      if (squares[this.x][this.y + 1] === "") {
-        validMoves.push({ x: this.x, y: this.y + 1 });
-      }
-    }
-    if (this.y > 0) {
-      if (squares[this.x][this.y - 1] === "") {
-        validMoves.push({ x: this.x, y: this.y - 1 });
-      }
-    }
-    const moves = checks
-      ? validMoves.filter((move) => {
-          const array: PieceType[][] = [...squares].map((a) => [...a]);
-          array[move.x][move.y] = this;
-          array[this.x][this.y] = "";
-          let checked = false;
-          // check for check from the enemy
-          array.forEach((a) => {
-            a.forEach((b) => {
-              if (typeof b !== "string" && b.color !== this.color) {
-                const captureMoves = b.capture(array, false);
-                captureMoves.forEach((move) => {
-                  const piece = array[move.x][move.y];
-                  if (
-                    typeof piece !== "string" &&
-                    piece.color === this.color &&
-                    piece.type === "king"
-                  ) {
-                    checked = true;
-                  }
-                });
-              }
-            });
-          });
-          return !checked;
-        })
-      : validMoves;
-    return [...moves, ...this.castle(squares)];
-  }
-
-  capture(squares: PieceType[][]) {
-    const validMoves: { x: number; y: number }[] = [];
-    // check for vertical moves
-    if (this.x < 7) {
-      const piece = squares[this.x + 1][this.y];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x + 1, y: this.y });
-      }
-
-      if (this.y < 7) {
-        const piece = squares[this.x + 1][this.y + 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x + 1, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        const piece = squares[this.x + 1][this.y - 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x + 1, y: this.y - 1 });
-        }
-      }
-    }
-
-    if (this.x > 0) {
-      const piece = squares[this.x - 1][this.y];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x - 1, y: this.y });
-      }
-      if (this.y < 7) {
-        const piece = squares[this.x - 1][this.y + 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x - 1, y: this.y + 1 });
-        }
-      }
-      if (this.y > 0) {
-        const piece = squares[this.x - 1][this.y - 1];
-        if (typeof piece !== "string" && piece.color !== this.color) {
-          validMoves.push({ x: this.x - 1, y: this.y - 1 });
-        }
-      }
-    }
-    // check for horizontal moves
-    if (this.y < 7) {
-      const piece = squares[this.x][this.y + 1];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x, y: this.y + 1 });
-      }
-    }
-    if (this.y > 0) {
-      const piece = squares[this.x][this.y - 1];
-      if (typeof piece !== "string" && piece.color !== this.color) {
-        validMoves.push({ x: this.x, y: this.y - 1 });
-      }
-    }
-    return validMoves.filter((move) => {
-      const array: PieceType[][] = [...squares].map((a) => [...a]);
-      array[move.x][move.y] = this;
-      array[this.x][this.y] = "";
-      let checked = false;
-      // check for check from the enemy
-      array.forEach((a) => {
-        a.forEach((b) => {
-          if (typeof b !== "string" && b.color !== this.color) {
-            const captureMoves = b.capture(array, false);
-            captureMoves.forEach((move) => {
-              const piece = array[move.x][move.y];
-              if (
-                typeof piece !== "string" &&
-                piece.color === this.color &&
-                piece.type === "king"
-              ) {
-                checked = true;
-              }
-            });
-          }
-        });
-      });
-      return !checked;
-    });
-  }
-
-  castle(squares: PieceType[][]) {
-    if (this.hasMoved) return [];
-    // check for checks on the king
-    const array: PieceType[][] = [...squares].map((a) => [...a]);
-    let checked = false;
-    array.forEach((a) => {
-      a.forEach((b) => {
-        if (typeof b !== "string" && b.color !== this.color) {
-          const captureMoves = b.capture(array, false);
-          captureMoves.forEach((move) => {
-            const piece = array[move.x][move.y];
-            if (
-              typeof piece !== "string" &&
-              piece.color === this.color &&
-              piece.type === "king"
-            ) {
-              checked = true;
-            }
-          });
-        }
-      });
-    });
-    if (checked) return [];
-
-    const validMoves: { x: number; y: number }[] = [];
-    if (this.color === "white") {
-      const kingSide = squares[7][7];
-      const queenSide = squares[7][0];
-      if (
-        typeof kingSide !== "string" &&
-        kingSide.type === "rook" &&
-        !kingSide.hasMoved
-      ) {
-        let canCastle = true;
-        array.forEach((a) => {
-          a.forEach((b) => {
-            if (typeof b !== "string" && b.color !== this.color) {
-              const validMoves = b.validMoves(array, false);
-              if (validMoves.some((move) => move.x === 7 && move.y === 5)) {
-                canCastle = false;
-              }
-            }
-          });
-        });
-        if (squares[7][5] === "" && squares[7][6] === "" && canCastle) {
-          validMoves.push({ x: 7, y: 6 });
-        }
-      }
-      if (
-        typeof queenSide !== "string" &&
-        queenSide.type === "rook" &&
-        !queenSide.hasMoved
-      ) {
-        let canCastle = true;
-        array.forEach((a) => {
-          a.forEach((b) => {
-            if (typeof b !== "string" && b.color !== this.color) {
-              const validMoves = b.validMoves(array, false);
-              if (validMoves.some((move) => move.x === 7 && move.y === 5)) {
-                canCastle = false;
-              }
-            }
-          });
-        });
-        if (
-          squares[7][1] === "" &&
-          squares[7][2] === "" &&
-          squares[7][3] === "" &&
-          canCastle
-        ) {
-          validMoves.push({ x: 7, y: 2 });
-        }
-      }
-    } else {
-      const kingSide = squares[0][7];
-      const queenSide = squares[0][0];
-      if (
-        typeof kingSide !== "string" &&
-        kingSide.type === "rook" &&
-        !kingSide.hasMoved
-      ) {
-        if (squares[0][5] === "" && squares[0][6] === "") {
-          validMoves.push({ x: 0, y: 6 });
-        }
-      }
-      if (
-        typeof queenSide !== "string" &&
-        queenSide.type === "rook" &&
-        !queenSide.hasMoved
-      ) {
-        if (
-          squares[0][1] === "" &&
-          squares[0][2] === "" &&
-          squares[0][3] === ""
-        ) {
-          validMoves.push({ x: 0, y: 2 });
-        }
-      }
-    }
-    return validMoves.filter((move) => {
-      const array: PieceType[][] = [...squares].map((a) => [...a]);
-      array[move.x][move.y] = this;
-      array[this.x][this.y] = "";
-      let checked = false;
-      // check for check from the enemy
-      array.forEach((a) => {
-        a.forEach((b) => {
-          if (typeof b !== "string" && b.color !== this.color) {
-            const captureMoves = b.capture(array, false);
-            captureMoves.forEach((move) => {
-              const piece = array[move.x][move.y];
-              if (
-                typeof piece !== "string" &&
-                piece.color === this.color &&
-                piece.type === "king"
-              ) {
-                checked = true;
-              }
-            });
-          }
-        });
-      });
-      return !checked;
-    });
-  }
 }

@@ -1,4 +1,4 @@
-import { PieceType } from "./App";
+import { PieceType } from "./pieces";
 
 export default function Square({
   dark = false,
