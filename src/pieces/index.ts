@@ -16,6 +16,10 @@ export type PieceType =
         squares: PieceType[][],
         checks?: boolean
       ) => { x: number; y: number }[];
+      defended: (
+        squares: PieceType[][],
+        checks?: boolean
+      ) => { x: number; y: number }[];
     }
   | string;
 

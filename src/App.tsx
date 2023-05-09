@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import calculateBestMove from "./bestMove";
 import evaluatePosition from "./eval";
 import { PieceType } from "./pieces";
 import Bishop from "./pieces/bishop";
@@ -15,6 +16,10 @@ export default function App() {
   const [enPassant, setEnPassant] = useState<{ x: number; y: number }[]>([]);
   const [message, setMessage] = useState("");
   const [promotion, setPromotion] = useState(false);
+  const [bestMove, setBestMove] = useState<{
+    piece: PieceType;
+    move: { x: number; y: number };
+  }>();
   const createBoard = () => {
     const array: PieceType[][] = Array.from({ length: 8 }, () =>
       Array.from({ length: 8 }, () => "")
@@ -69,6 +74,12 @@ export default function App() {
               key={`${i}-${j}`}
               dark={(i + j) % 2 === 0}
               piece={b}
+              color={
+                color === "black" &&
+                typeof bestMove?.piece !== "string" &&
+                ((bestMove?.piece.x === i && bestMove?.piece.y === j) ||
+                  (bestMove?.move.x === i && bestMove?.move.y === j))
+              }
               onClick={() => {
                 const valid = b === "valid-move";
                 const hanging = typeof b !== "string" && b.hanging;
@@ -339,7 +350,9 @@ export default function App() {
                 }
                 setSquares(array);
 
-                  console.log(evaluatePosition(array))
+                if (color === "white" && activePiece) {
+                  setBestMove(calculateBestMove(array, "black", 2));
+                }
 
                 // check for checkmate
                 let checkmate = false;
@@ -370,7 +383,6 @@ export default function App() {
                             );
                           })
                         ) {
-                          console.log("check", b);
                           checkmate = true;
                         }
                       }
@@ -408,18 +420,21 @@ export default function App() {
             {message}
             <button
               className="absolute bottom-20 px-8 py-4 text-3xl bg-opacity-80 transition-all hover:bg-opacity-95 bg-rose-700 rounded-full"
-             onClick={() => {
-              createBoard();
-              setMessage("");
-              setPromotion(false);
-              setEnPassant([]);
-              setColor("white");
-            }}>Play Again</button>
+              onClick={() => {
+                createBoard();
+                setMessage("");
+                setPromotion(false);
+                setEnPassant([]);
+                setColor("white");
+              }}
+            >
+              Play Again
+            </button>
           </div>
         )}
         {promotion && (
           <div className="absolute w-full bg-white bg-opacity-80 h-full p-16 text-8xl text-black text-center text-shadow-white">
-              <div className="grid grid-cols-2 place-items-center w-full h-full">
+            <div className="grid grid-cols-2 place-items-center w-full h-full">
               <div
                 onClick={() => {
                   const array: PieceType[][] = [...squares];
@@ -504,9 +519,14 @@ export default function App() {
               >
                 <p>♞</p>
               </div>
-              </div>
             </div>
+          </div>
         )}
+        {/* eval bar */}
+
+        <p className="w-full absolute bottom-full text-center text-4xl">
+          {evaluatePosition(squares, color).toFixed(2)}
+        </p>
       </div>
     </div>
   );
