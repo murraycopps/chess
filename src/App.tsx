@@ -72,7 +72,7 @@ export default function App() {
           a.map((b, j) => (
             <Square
               key={`${i}-${j}`}
-              dark={(i + j) % 2 === 0}
+              dark={(i + j) % 2 === 1}
               piece={b}
               color={
                 color === "black" &&

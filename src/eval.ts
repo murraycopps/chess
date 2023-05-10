@@ -2,64 +2,52 @@ import { PieceType } from "./pieces";
 
 const evaluatePosition = (squares: PieceType[][], turn: "white" | "black") => {    // evaluate material
 
-    // check for checkmate or stalemate
 
-   let canMove = false;
-    let checkmate = false;
+    let canMove = false;
+    let material = 0;
+    let centerControl = 0;
+    let kingSafety = 0;
+    let whiteKingCenter = 0;
+    let blackKingCenter = 0;
+    let whitePawnPromotion = 0;
+    let blackPawnPromotion = 0;
+    let hangingPoints = 0;
+    let defendedPoints = 0;
+    let whiteKingHasMoved = false;
+    let blackKingHasMoved = false;
+    let whitePieceSight = 0;
+    let blackPieceSight = 0;
+
+
+
     squares.forEach((row) => {
         row.forEach((piece) => {
             if (typeof piece !== "string") {
+
                 if (piece.color === turn) {
                     const moves = [...piece.validMoves(squares), ...piece.capture(squares)];
                     if (moves.length > 0) {
                         canMove = true;
                     }
                 }
-                else{
+                else {
                     const moves = piece.capture(squares);
                     // find if any of the moves are a capture of the king
                     moves.forEach((move) => {
                         const piece = squares[move.x][move.y];
                         if (typeof piece !== "string" && piece.color === turn && piece.type === "king") {
-                            checkmate = true;
+                             return turn === "white" ? -Infinity : Infinity;
                         }
                     });
                 }
-            }
-        });
-    });
 
-    if(!canMove){
-        if(checkmate){
-            return turn === "white" ? -Infinity : Infinity;
-        }
-        else{
-            return 0;
-        }
-    }
-
-                    
-
-    
-
-
-    let material = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
+                //  material
                 if (piece.color === "white") {
                     material += piece.value;
                 } else {
                     material -= piece.value;
                 }
-            }
-        });
-    });
-    // evaluate position (center control)
-    let centerControl = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
+                // center control
                 if (piece.type !== "pawn") {
                     // use piece valid moves to evaluate center control
                     const validMoves = [...piece.validMoves(squares, false), ...piece.capture(squares, false)]
@@ -92,15 +80,7 @@ const evaluatePosition = (squares: PieceType[][], turn: "white" | "black") => { 
                     }
 
                 }
-            }
-        });
-    });
-
-    // evaluate position (king safety) by checking for checks
-    let kingSafety = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
+                // king safety (check for checks)
                 const validMoves = [...piece.validMoves(squares, false), ...piece.capture(squares, false)]
                 // check for checks
                 validMoves.forEach((move) => {
@@ -134,141 +114,100 @@ const evaluatePosition = (squares: PieceType[][], turn: "white" | "black") => { 
                         }
                     }
                 });
-            }
-        });
-    });
 
-    // evaluate how far the king is from the center
-    let whiteKingCenter = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
-                if (piece.color === "white" && piece.type === "king") {
-                    whiteKingCenter += Math.abs(piece.x - 3.5) + Math.abs(piece.y - 3.5);
-                }
-            }
-        });
-    });
-
-    let blackKingCenter = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
-                if (piece.color === "black" && piece.type === "king") {
-                    blackKingCenter += Math.abs(piece.x - 3.5) + Math.abs(piece.y - 3.5);
-                }
-            }
-        });
-    });
-
-    let kingCenter = whiteKingCenter - blackKingCenter;
-
-
-    // evaluate how close pawns are to promotion
-    let whitePawnPromotion = 0;
-    let blackPawnPromotion = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
+                // pawn promotion
                 if (piece.color === "white" && piece.type === "pawn") {
                     whitePawnPromotion += piece.x;
                 }
                 if (piece.color === "black" && piece.type === "pawn") {
                     blackPawnPromotion += 7 - piece.x;
                 }
-            }
-        });
-    });
 
-    let pawnPromotion = whitePawnPromotion - blackPawnPromotion;
-
-    // how many pieces each piece sees
-    let whitePieceSight = 0;
-    let blackPieceSight = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
-                const validMoves = [...piece.validMoves(squares, false), ...piece.capture(squares, false)].length;
+                // king center
+                if (piece.color === "white" && piece.type === "king") {
+                    whiteKingCenter += Math.abs(piece.x - 3.5) + Math.abs(piece.y - 3.5);
+                }
+                if (piece.color === "black" && piece.type === "king") {
+                    blackKingCenter += Math.abs(piece.x - 3.5) + Math.abs(piece.y - 3.5);
+                }
+                // piece sight
                 if (piece.color === "white") {
-                    whitePieceSight += validMoves;
+                    whitePieceSight += validMoves.length
                 }
                 else {
-                    blackPieceSight += validMoves;
+                    blackPieceSight += validMoves.length
                 }
-            }
-        });
-    });
-
-    let pieceSight = whitePieceSight - blackPieceSight;
-
-    // hanging pieces
-    let hangingPoints = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
-                const validcaptures  = piece.capture(squares, false);
+                // hanging pieces
+                const validcaptures = piece.capture(squares, false);
                 validcaptures.forEach((move) => {
                     const hangingPiece = squares[move.x][move.y];
                     if (typeof hangingPiece !== "string" && hangingPiece.color !== piece.color) {
-                        if(piece.color === "white"){
+                        if (piece.color === "white") {
                             hangingPoints += hangingPiece.value;
                         }
-                        else{
+                        else {
                             hangingPoints -= hangingPiece.value;
                         }
-                    }
-                });
-            }
-        });
-    });
 
-    // defended peices
-    let defendedPoints = 0;
-    squares.forEach((row) => {
-        row.forEach((piece) => {
-            if (typeof piece !== "string") {
-                const validcaptures  = piece.defended(squares, false);
-                validcaptures.forEach((move) => {
+                    }
+
+                });
+                // defended pieces
+                const defended = piece.defended(squares, false);
+                defended.forEach((move) => {
                     const defendedPiece = squares[move.x][move.y];
                     if (typeof defendedPiece !== "string" && defendedPiece.color === piece.color) {
-                        if(piece.color === "white"){
+                        if (piece.color === "white") {
                             defendedPoints += 1;
                         }
-                        else{
+                        else {
                             defendedPoints -= 1;
                         }
                     }
                 });
+
             }
+
         });
     });
 
-    
+
+
+    let kingCenter = blackKingCenter - whiteKingCenter;
+
+
+
+    let pawnPromotion = whitePawnPromotion - blackPawnPromotion;
+
+    // how many pieces each piece sees
+
+
+
+    let pieceSight = whitePieceSight - blackPieceSight;
 
 
 
     // check if king has moved yet. if the king has moved and is not castled, then subtract 1 from the score
-    let whiteKingHasMoved = false;
-    let blackKingHasMoved = false;
+
     squares.forEach((row) => {
         row.forEach((piece) => {
             if (typeof piece !== "string") {
                 if (piece.color === "white" && piece.type === "king" && piece.hasMoved) {
-                // check if the king is castled or in the corner
-                if(piece.y < 2 || piece.y > 5){
-                    whiteKingHasMoved = false;
-                }
-                else{
-                    whiteKingHasMoved = true;
-                }
-                    
-                    
+                    // check if the king is castled or in the corner
+                    if (piece.y < 2 || piece.y > 5) {
+                        whiteKingHasMoved = false;
+                    }
+                    else {
+                        whiteKingHasMoved = true;
+                    }
+
+
                 }
                 if (piece.color === "black" && piece.type === "king" && piece.hasMoved) {
-                    if(piece.y < 2 || piece.y > 5){
+                    if (piece.y < 2 || piece.y > 5) {
                         blackKingHasMoved = false;
                     }
-                    else{
+                    else {
                         blackKingHasMoved = true;
                     }
                 }
@@ -276,22 +215,24 @@ const evaluatePosition = (squares: PieceType[][], turn: "white" | "black") => { 
         });
     });
 
-    if(whiteKingHasMoved !== blackKingHasMoved){
-        if(whiteKingHasMoved){
+    if (whiteKingHasMoved !== blackKingHasMoved) {
+        if (whiteKingHasMoved) {
             material -= 1;
         }
-        else{
+        else {
             material += 1;
         }
     }
 
 
 
+    if (!canMove) {
 
+        return 0;
 
+    }
 
-
-    return ((material * 3 + (centerControl + kingSafety  + (-kingCenter + pawnPromotion + pieceSight + hangingPoints + defendedPoints) / 2.5) / 4) / 4);
+    return (material * 10 + centerControl * 3 + kingSafety * 3 + kingCenter * 2 + pawnPromotion + pieceSight * 2 * 2 + hangingPoints * 4 + defendedPoints) / 27;
 
 }
 

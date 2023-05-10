@@ -143,7 +143,7 @@ export default class King extends Piece {
         // check for check from the enemy
         array.forEach((a) => {
           a.forEach((b) => {
-            if (typeof b !== "string" && b.color !== this.color) {
+            if (typeof b !== "string" && b.color !== this.color && b.type !== "king") {
               const captureMoves = b.capture(array, false);
               captureMoves.forEach((move) => {
                 const piece = array[move.x][move.y];
@@ -350,7 +350,7 @@ export default class King extends Piece {
         // check for check from the enemy
         array.forEach((a) => {
           a.forEach((b) => {
-            if (typeof b !== "string" && b.color !== this.color) {
+            if (typeof b !== "string" && b.color !== this.color && b.type !== "king") {
               const captureMoves = b.capture(array, false);
               captureMoves.forEach((move) => {
                 const piece = array[move.x][move.y];

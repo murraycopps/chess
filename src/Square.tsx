@@ -38,20 +38,18 @@ export default function Square({
               : "text-black text-shadow-white"
           }`}
         >
-          {typeof piece === "string"
-            ? piece.charAt(0).toUpperCase()
-            : piece.type === "pawn"
-            ? "♟"
-            : piece.type === "rook"
-            ? "♜"
-            : piece.type === "knight"
-            ? "♞"
-            : piece.type === "bishop"
-            ? "♝"
-            : piece.type === "queen"
-            ? "♛"
-            : "♚"}
-          {/*  piece.type.charAt(0).toUpperCase() */}
+          {typeof piece !== "string" &&
+            (piece.type === "pawn"
+              ? "♟"
+              : piece.type === "rook"
+              ? "♜"
+              : piece.type === "knight"
+              ? "♞"
+              : piece.type === "bishop"
+              ? "♝"
+              : piece.type === "queen"
+              ? "♛"
+              : "♚")}
         </p>
       )}
     </div>
