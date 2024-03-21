@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import calculateBestMove from "./bestMove";
-import evaluatePosition from "./eval";
+import { calculateBestMove } from "./bestMove";
+import { evaluatePosition } from "./eval";
 import { PieceType } from "./pieces";
 import Bishop from "./pieces/bishop";
 import King from "./pieces/king";

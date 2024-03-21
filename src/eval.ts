@@ -232,9 +232,9 @@ const evaluatePosition = (squares: PieceType[][], turn: "white" | "black") => { 
 
     }
 
-    return (material * 10 + centerControl * 3 + kingSafety * 3 + kingCenter * 2 + pawnPromotion + pieceSight * 2 * 2 + hangingPoints * 4 + defendedPoints) / 27;
+    return (material * 8 + centerControl * 4 + kingSafety * 3 + kingCenter * 2 + pawnPromotion + pieceSight * 2 * 2 + hangingPoints * 6 + defendedPoints) / 28;
 
 }
 
 
-export default evaluatePosition;
+export  {evaluatePosition};

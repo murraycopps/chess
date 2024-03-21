@@ -1,4 +1,4 @@
-import evaluatePosition from "./eval";
+import {evaluatePosition} from "./eval";
 import { PieceType } from "./pieces"
 
 const calculateBestMove = (squares: PieceType[][], color: "black" | "white", depth: number) => {
@@ -43,4 +43,4 @@ const calculateBestMove = (squares: PieceType[][], color: "black" | "white", dep
 }
 
 
-export default calculateBestMove;
+export { calculateBestMove };
